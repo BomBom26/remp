@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Змінити статус</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
+        form { width: 50%; margin: 20px auto; background-color: #fff; padding: 20px; border-radius: 8px; }
+        select { width: 100%; margin: 5px 0; padding: 5px; }
+        button { padding: 10px 20px; margin: 5px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+    </style>
+</head>
+<body>
+    <h1>Змінити статус</h1>
+    <form action="/change_status/{{ sale_id }}" method="POST">
+        <p>Поточний статус: {{ current_status }}</p>
+        <select name="status" required>
+            <option value="Забрали">Забрали</option>
+            <option value="Очікує">Очікує</option>
+            <option value="Повернення">Повернення</option>
+        </select>
+        <button type="submit">Зберегти</button>
+        <button type="button" onclick="window.location='/purchases'">Скасувати</button>
+    </form>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Облік бізнесу</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
+        .info { margin: 20px; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        button { padding: 10px 20px; margin: 5px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .edit-btn { font-size: 12px; margin-left: 10px; color: #007BFF; text-decoration: none; }
+        .edit-btn:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>Загальна інформація</h1>
+    <div class="info">
+        <form method="POST">
+            Період: 
+            З: <input type="date" name="start_date" value="{{ start_date }}">
+            По: <input type="date" name="end_date" value="{{ end_date }}">
+            <input type="submit" value="Оновити">
+        </form>
+        <h2>Залишки товару</h2>
+        {% for product in products %}
+            <p>{{ product[0] }}: {{ product[1] }} шт. 
+                <a href="/edit_product/{{ product[2] }}" class="edit-btn">[Редагувати]</a>
+            </p>
+        {% endfor %}
+        <h2>Товар на пошті: {{ on_post }} шт. (Вартість: {{ on_post_cost }} грн)</h2>
+        <h2>На пошті: {{ on_post_cost - withdrawn }} грн</h2>
+        <h2>Знято з пошти: {{ withdrawn }} грн</h2>
+        <h2>Загальний дохід за період: {{ total_income }} грн</h2>
+    </div>
+    <button onclick="window.location='/purchases'">Покупки</button>
+    <button onclick="window.location='/reports'">Переглянути звіти</button>
+    <button onclick="window.location='/add_expense'">Додати витрати</button>
+    <button onclick="window.location='/add_product'">Додати товар</button>
+    <button onclick="window.location='/withdraw'">Зняття коштів з пошти</button>
+</body>
+</html>

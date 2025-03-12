@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Покупки</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
+        table { width: 90%; margin: 20px auto; border-collapse: collapse; background-color: #fff; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fff; margin: 10% auto; padding: 20px; width: 50%; border-radius: 8px; }
+        .close { float: right; font-size: 24px; cursor: pointer; }
+        button { padding: 10px 20px; margin: 5px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        input, select { width: 100%; margin: 5px 0; padding: 5px; }
+        .product-row { display: flex; align-items: center; margin-bottom: 5px; }
+        .product-row select, .product-row input { width: 45%; }
+        .add-btn, .remove-btn { width: 10%; margin-left: 5px; background-color: #007BFF; }
+        .remove-btn { background-color: #ff4444; }
+    </style>
+</head>
+<body>
+    <h1>Покупки</h1>
+    <form method="POST">
+        Період: 
+        З: <input type="date" name="start_date" value="{{ start_date }}">
+        По: <input type="date" name="end_date" value="{{ end_date }}">
+        <input type="submit" value="Оновити">
+    </form>
+    <table>
+        <tr>
+            <th>№</th>
+            <th>Дата</th>
+            <th>Ім’я</th>
+            <th>Instagram</th>
+            <th>Інформація по НП</th>
+            <th>Товар</th>
+            <th>Сума передоплати</th>
+            <th>Сума на пошті</th>
+            <th>ТТН</th>
+            <th>Статус</th>
+            <th>Коментар</th>
+            <th>Дія</th>
+        </tr>
+        {% for sale in sales %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ sale[1] }}</td>
+            <td>{{ sale[2] }}</td>
+            <td>{{ sale[3] }}</td>
+            <td>{{ sale[4] }}</td>
+            <td>{{ sale[5] }}</td>
+            <td>{{ sale[6] }} грн</td>
+            <td>{{ sale[7] }} грн</td>
+            <td>{{ sale[8] }}</td>
+            <td>{{ sale[9] }}</td>
+            <td>{{ sale[10] }}</td>
+            <td><a href="/change_status/{{ sale[0] }}">Змінити статус</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+    <h2>Підсумки за період:</h2>
+    {% for name, count in product_counts.items() %}
+        <p>{{ name }}: {{ count }} шт.</p>
+    {% endfor %}
+    <h2>Загальна сума:</h2>
+    <p>Забрали: {{ totals['Забрали'] }} грн</p>
+    <p>Очікує: {{ totals['Очікує'] }} грн</p>
+    <p>Повернення: {{ totals['Повернення'] }} грн</p>
+    <button onclick="openModal()">Додати покупку</button>
+
+    <!-- Модальне вікно -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">×</span>
+            <h2>Додати покупку</h2>
+            <form method="POST">
+                <input type="date" name="date" required>
+                <input type="text" name="client_name" placeholder="Ім’я" required>
+                <input type="text" name="instagram" placeholder="Instagram" required>
+                <input type="text" name="post_office" placeholder="Інформація по Новій Пошті" required>
+                <div id="products">
+                    <div class="product-row">
+                        <select name="product" required>
+                            {% for product in products %}
+                                <option value="{{ product[1] }}">{{ product[1] }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="number" name="quantity" value="1" min="1" required>
+                        <button type="button" class="add-btn" onclick="addProductRow()">➕</button>
+                    </div>
+                </div>
+                <input type="number" name="prepayment" placeholder="Сума передоплати (грн)" step="0.01" required>
+                <input type="number" name="cod" placeholder="Сума на пошті (грн)" step="0.01" required>
+                <input type="text" name="ttn" placeholder="Номер накладної ТТН" required>
+                <select name="status" required>
+                    <option value="Забрали">Забрали</option>
+                    <option value="Очікує">Очікує</option>
+                    <option value="Повернення">Повернення</option>
+                </select>
+                <input type="text" name="comment" placeholder="Коментар">
+                <button type="submit">Зберегти</button>
+                <button type="button" onclick="closeModal()">Скасувати</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openModal() {
+            document.getElementById('addModal').style.display = 'block';
+        }
+        function closeModal() {
+            document.getElementById('addModal').style.display = 'none';
+        }
+        function addProductRow() {
+            const container = document.getElementById('products');
+            const newRow = document.createElement('div');
+            newRow.className = 'product-row';
+            newRow.innerHTML = `
+                <select name="product" required>
+                    {% for product in products %}
+                        <option value="{{ product[1] }}">{{ product[1] }}</option>
+                    {% endfor %}
+                </select>
+                <input type="number" name="quantity" value="1" min="1" required>
+                <button type="button" class="add-btn" onclick="addProductRow()">➕</button>
+                <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✖</button>
+            `;
+            container.appendChild(newRow);
+        }
+    </script>
+</body>
+</html>

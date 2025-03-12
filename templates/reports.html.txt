@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Звіти</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
+        table { width: 80%; margin: 20px auto; border-collapse: collapse; background-color: #fff; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>Переглянути звіти</h1>
+    <form method="POST">
+        Період: 
+        З: <input type="date" name="start_date" value="{{ start_date }}">
+        По: <input type="date" name="end_date" value="{{ end_date }}">
+        <input type="submit" value="Оновити">
+    </form>
+    <h2>Підсумки за період:</h2>
+    {% for name, count in product_counts.items() %}
+        <p>{{ name }}: {{ count }} шт.</p>
+    {% endfor %}
+    <h2>Загальна сума:</h2>
+    <p>Забрали: {{ totals['Забрали'] }} грн</p>
+    <p>Очікує: {{ totals['Очікує'] }} грн</p>
+    <p>Повернення: {{ totals['Повернення'] }} грн</p>
+    <h2>Витрати за період:</h2>
+    {% for expense in expenses %}
+        <p>{{ expense[0] }}: {{ expense[1] }} грн</p>
+    {% endfor %}
+    <h2>Прибуток: {{ profit }} грн</h2>
+    <h2>Детальний список покупок:</h2>
+    <table>
+        <tr>
+            <th>Ім’я</th>
+            <th>Нікнейм Instagram</th>
+            <th>ТТН</th>
+            <th>Товар, який купили</th>
+            <th>Передоплата</th>
+            <th>На пошті</th>
+            <th>Статус</th>
+        </tr>
+        {% for sale in sales %}
+        <tr>
+            <td>{{ sale[0] }}</td>
+            <td>{{ sale[1] }}</td>
+            <td>{{ sale[2] }}</td>
+            <td>{{ sale[3] }}</td>
+            <td>{{ sale[4] }} грн</td>
+            <td>{{ sale[5] }} грн</td>
+            <td>{{ sale[6] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

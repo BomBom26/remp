@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Додати товар</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
+        form { width: 50%; margin: 20px auto; background-color: #fff; padding: 20px; border-radius: 8px; }
+        input { width: 100%; margin: 5px 0; padding: 5px; }
+        button { padding: 10px 20px; margin: 5px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+    </style>
+</head>
+<body>
+    <h1>Додати товар в обіг</h1>
+    <form action="/add_product" method="POST">
+        <input type="text" name="name" placeholder="Назва товару" required>
+        <input type="number" name="stock" placeholder="Кількість" required>
+        <button type="submit">Зберегти</button>
+    </form>
+</body>
+</html>
