@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Історія запасів</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
+        .form-container { margin: 20px; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 90%; margin-left: auto; margin-right: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        input { padding: 5px; margin: 5px; }
+        button { padding: 10px 20px; margin: 5px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .home-link { position: absolute; top: 10px; left: 10px; font-size: 16px; text-decoration: none; color: #007BFF; }
+        .home-link:hover { text-decoration: underline; }
+        .logout-link { position: absolute; top: 10px; right: 10px; font-size: 16px; text-decoration: none; color: #ff4444; }
+        .logout-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <a href="/" class="home-link">🏠 Головна</a>
+    <a href="/logout" class="logout-link">Вийти</a>
+    <div class="form-container">
+        <h2>Історія запасів</h2>
+        <form method="POST">
+            Період: 
+            З: <input type="date" name="start_date" value="{{ start_date }}">
+            По: <input type="date" name="end_date" value="{{ end_date }}">
+            <input type="submit" value="Оновити">
+        </form>
+        <table>
+            <tr>
+                <th>Дата</th><th>Товар</th><th>Зміна (шт)</th><th>Дія</th><th>ID замовлення</th>
+            </tr>
+            {% for entry in history %}
+            <tr>
+                <td>{{ entry[0] }}</td><td>{{ entry[1] }}</td><td>{{ entry[2] }}</td><td>{{ entry[3] }}</td><td>{{ entry[4] if entry[4] else '-' }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</body>
+</html>
