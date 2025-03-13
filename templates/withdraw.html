@@ -5,18 +5,27 @@
     <title>Зняття коштів з пошти</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
-        form { width: 50%; margin: 20px auto; background-color: #fff; padding: 20px; border-radius: 8px; }
+        .form-container { margin: 20px; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 300px; margin-left: auto; margin-right: auto; }
         input { width: 100%; margin: 5px 0; padding: 5px; }
         button { padding: 10px 20px; margin: 5px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
         button:hover { background-color: #45a049; }
+        .home-link { position: absolute; top: 10px; left: 10px; font-size: 16px; text-decoration: none; color: #007BFF; }
+        .home-link:hover { text-decoration: underline; }
+        .logout-link { position: absolute; top: 10px; right: 10px; font-size: 16px; text-decoration: none; color: #ff4444; }
+        .logout-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
-    <h1>Зняття коштів з пошти</h1>
-    <form action="/withdraw" method="POST">
-        <input type="date" name="date" required>
-        <input type="number" name="amount" placeholder="Сума, знята з пошти (грн)" step="0.01" required>
-        <button type="submit">Зберегти</button>
-    </form>
+    <a href="/" class="home-link">🏠 Головна</a>
+    <a href="/logout" class="logout-link">Вийти</a>
+    <div class="form-container">
+        <h2>Зняття коштів з пошти</h2>
+        <p>Загалом знято: {{ total_withdrawn }} грн</p>
+        <form method="POST">
+            <input type="date" name="date" required>
+            <input type="number" name="amount" placeholder="Сума (грн)" step="0.01" required>
+            <button type="submit">Додати зняття</button>
+        </form>
+    </div>
 </body>
 </html>
