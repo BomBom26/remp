@@ -2,71 +2,52 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Звіти</title>
+    <title>Статистика</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
-        table { width: 80%; margin: 20px auto; border-collapse: collapse; background-color: #fff; }
+        .form-container { margin: 20px; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 90%; margin-left: auto; margin-right: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
+        input { padding: 5px; margin: 5px; }
+        button { padding: 10px 20px; margin: 5px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .home-link { position: absolute; top: 10px; left: 10px; font-size: 16px; text-decoration: none; color: #007BFF; }
+        .home-link:hover { text-decoration: underline; }
+        .logout-link { position: absolute; top: 10px; right: 10px; font-size: 16px; text-decoration: none; color: #ff4444; }
+        .logout-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
-    <h1>Переглянути звіти</h1>
-    <form method="POST">
-        Період: 
-        З: <input type="date" name="start_date" value="{{ start_date }}">
-        По: <input type="date" name="end_date" value="{{ end_date }}">
-        <input type="submit" value="Оновити">
-    </form>
-    <h2>Підсумки за період:</h2>
-    {% if product_counts %}
-        {% for name, count in product_counts.items() %}
-            <p>{{ name }}: {{ count }} шт.</p>
-        {% endfor %}
-    {% else %}
-        <p>Немає продажів за цей період.</p>
-    {% endif %}
-    <h2>Загальна сума:</h2>
-    <p>Забрали: {{ totals['Забрали'] | default(0) }} грн</p>
-    <p>Очікує: {{ totals['Очікує'] | default(0) }} грн</p>
-    <p>Повернення: {{ totals['Повернення'] | default(0) }} грн</p>
-    <h2>Витрати за період:</h2>
-    {% if expenses %}
-        {% for expense in expenses %}
-            <p>{{ expense[0] }}: {{ expense[1] }} грн</p>
-        {% endfor %}
-    {% else %}
-        <p>Немає витрат за цей період.</p>
-    {% endif %}
-    <h2>Прибуток: {{ profit | default(0) }} грн</h2>
-    <h2>Детальний список покупок:</h2>
-    <table>
-        <tr>
-            <th>Ім’я</th>
-            <th>Нікнейм Instagram</th>
-            <th>ТТН</th>
-            <th>Товар, який купили</th>
-            <th>Передоплата</th>
-            <th>На пошті</th>
-            <th>Статус</th>
-        </tr>
-        {% if sales %}
+    <a href="/" class="home-link">🏠 Головна</a>
+    <a href="/logout" class="logout-link">Вийти</a>
+    <div class="form-container">
+        <h2>Статистика</h2>
+        <form method="POST">
+            Період: 
+            З: <input type="date" name="start_date" value="{{ start_date }}">
+            По: <input type="date" name="end_date" value="{{ end_date }}">
+            <input type="submit" value="Оновити">
+            <button onclick="window.location='/export_report'">Експортувати звіт</button>
+        </form>
+        <h3>Замовлення:</h3>
+        <table>
+            <tr><th>Дата</th><th>Ім’я</th><th>Instagram</th><th>ТТН</th><th>Товар</th><th>Передоплата</th><th>На пошті</th><th>Статус</th></tr>
             {% for sale in sales %}
             <tr>
-                <td>{{ sale[0] }}</td>
-                <td>{{ sale[1] }}</td>
-                <td>{{ sale[2] }}</td>
-                <td>{{ sale[3] }}</td>
-                <td>{{ sale[4] }} грн</td>
-                <td>{{ sale[5] }} грн</td>
-                <td>{{ sale[6] }}</td>
+                <td>{{ sale[0] }}</td><td>{{ sale[1] }}</td><td>{{ sale[2] }}</td><td>{{ sale[3] }}</td><td>{{ sale[4] }}</td><td>{{ sale[5] }} грн</td><td>{{ sale[6] }} грн</td><td>{{ sale[7] }}</td>
             </tr>
             {% endfor %}
-        {% else %}
+        </table>
+        <h3>Витрати:</h3>
+        <table>
+            <tr><th>Дата</th><th>Опис</th><th>Сума</th></tr>
+            {% for expense in expenses %}
             <tr>
-                <td colspan="7">Немає покупок за цей період.</td>
+                <td>{{ expense[0] }}</td><td>{{ expense[1] }}</td><td>{{ expense[2] }} грн</td>
             </tr>
-        {% endif %}
-    </table>
+            {% endfor %}
+        </table>
+    </div>
 </body>
 </html>
