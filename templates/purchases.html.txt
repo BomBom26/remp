@@ -61,13 +61,17 @@
         {% endfor %}
     </table>
     <h2>Підсумки за період:</h2>
-    {% for name, count in product_counts.items() %}
-        <p>{{ name }}: {{ count }} шт.</p>
-    {% endfor %}
+    {% if product_counts %}
+        {% for name, count in product_counts.items() %}
+            <p>{{ name }}: {{ count }} шт.</p>
+        {% endfor %}
+    {% else %}
+        <p>Немає продажів за цей період.</p>
+    {% endif %}
     <h2>Загальна сума:</h2>
-    <p>Забрали: {{ totals['Забрали'] }} грн</p>
-    <p>Очікує: {{ totals['Очікує'] }} грн</p>
-    <p>Повернення: {{ totals['Повернення'] }} грн</p>
+    <p>Забрали: {{ totals['Забрали'] | default(0) }} грн</p>
+    <p>Очікує: {{ totals['Очікує'] | default(0) }} грн</p>
+    <p>Повернення: {{ totals['Повернення'] | default(0) }} грн</p>
     <button onclick="openModal()">Додати покупку</button>
 
     <!-- Модальне вікно -->
@@ -75,21 +79,25 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal()">×</span>
             <h2>Додати покупку</h2>
-            <form method="POST">
+            <form method="POST" onsubmit="return validateQuantities()">
                 <input type="date" name="date" required>
                 <input type="text" name="client_name" placeholder="Ім’я" required>
                 <input type="text" name="instagram" placeholder="Instagram" required>
                 <input type="text" name="post_office" placeholder="Інформація по Новій Пошті" required>
                 <div id="products">
-                    <div class="product-row">
-                        <select name="product" required>
-                            {% for product in products %}
-                                <option value="{{ product[1] }}">{{ product[1] }}</option>
-                            {% endfor %}
-                        </select>
-                        <input type="number" name="quantity" value="1" min="1" required>
-                        <button type="button" class="add-btn" onclick="addProductRow()">➕</button>
-                    </div>
+                    {% if products %}
+                        <div class="product-row">
+                            <select name="product" onchange="updateStock(this)" required>
+                                {% for product in products %}
+                                    <option value="{{ product[1] }}" data-stock="{{ product[2] }}">{{ product[1] }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="number" name="quantity" value="1" min="1" required oninput="checkStock(this)">
+                            <button type="button" class="add-btn" onclick="addProductRow()">➕</button>
+                        </div>
+                    {% else %}
+                        <p>Немає товарів для продажу. Додайте товари на головній сторінці.</p>
+                    {% endif %}
                 </div>
                 <input type="number" name="prepayment" placeholder="Сума передоплати (грн)" step="0.01" required>
                 <input type="number" name="cod" placeholder="Сума на пошті (грн)" step="0.01" required>
@@ -107,6 +115,12 @@
     </div>
 
     <script>
+        const productStocks = {
+            {% for product in products %}
+                "{{ product[1] }}": {{ product[2] }},
+            {% endfor %}
+        };
+
         function openModal() {
             document.getElementById('addModal').style.display = 'block';
         }
@@ -118,16 +132,42 @@
             const newRow = document.createElement('div');
             newRow.className = 'product-row';
             newRow.innerHTML = `
-                <select name="product" required>
+                <select name="product" onchange="updateStock(this)" required>
                     {% for product in products %}
-                        <option value="{{ product[1] }}">{{ product[1] }}</option>
+                        <option value="{{ product[1] }}" data-stock="{{ product[2] }}">{{ product[1] }}</option>
                     {% endfor %}
                 </select>
-                <input type="number" name="quantity" value="1" min="1" required>
+                <input type="number" name="quantity" value="1" min="1" required oninput="checkStock(this)">
                 <button type="button" class="add-btn" onclick="addProductRow()">➕</button>
                 <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✖</button>
             `;
             container.appendChild(newRow);
+            updateStock(newRow.querySelector('select'));
+        }
+        function updateStock(select) {
+            const stock = select.options[select.selectedIndex].getAttribute('data-stock');
+            const quantityInput = select.nextElementSibling;
+            quantityInput.setAttribute('max', stock);
+        }
+        function checkStock(input) {
+            const select = input.previousElementSibling;
+            const stock = select.options[select.selectedIndex].getAttribute('data-stock');
+            if (parseInt(input.value) > parseInt(stock)) {
+                input.setCustomValidity(`Доступно лише ${stock} шт.`);
+            } else {
+                input.setCustomValidity('');
+            }
+        }
+        function validateQuantities() {
+            const quantityInputs = document.querySelectorAll('input[name="quantity"]');
+            for (let input of quantityInputs) {
+                checkStock(input);
+                if (input.validationMessage) {
+                    alert(input.validationMessage);
+                    return false;
+                }
+            }
+            return true;
         }
     </script>
 </body>
