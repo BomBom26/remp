@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Додати товар</title>
+    <title>Редагувати товар</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
         .form-container { margin: 20px; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 300px; margin-left: auto; margin-right: auto; }
@@ -19,11 +19,10 @@
     <a href="/" class="home-link">🏠 Головна</a>
     <a href="/logout" class="logout-link">Вийти</a>
     <div class="form-container">
-        <h2>Додати товар</h2>
+        <h2>Редагувати товар: {{ product[0] }}</h2>
         <form method="POST">
-            <input type="text" name="name" placeholder="Назва товару" required>
-            <input type="number" name="stock" placeholder="Кількість" required>
-            <button type="submit">Додати</button>
+            <input type="number" name="stock" value="{{ product[1] }}" required>
+            <button type="submit">Оновити</button>
         </form>
     </div>
 </body>
