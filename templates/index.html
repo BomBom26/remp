@@ -10,9 +10,18 @@
         button:hover { background-color: #45a049; }
         .edit-btn { font-size: 12px; margin-left: 10px; color: #007BFF; text-decoration: none; }
         .edit-btn:hover { text-decoration: underline; }
+        .delete-btn { font-size: 12px; margin-left: 5px; color: #ff4444; text-decoration: none; }
+        .delete-btn:hover { text-decoration: underline; }
+        .low-stock { color: red; font-weight: bold; }
+        .home-link { position: absolute; top: 10px; left: 10px; font-size: 16px; text-decoration: none; color: #007BFF; }
+        .home-link:hover { text-decoration: underline; }
+        .logout-link { position: absolute; top: 10px; right: 10px; font-size: 16px; text-decoration: none; color: #ff4444; }
+        .logout-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
+    <a href="/" class="home-link">🏠 Головна</a>
+    <a href="/logout" class="logout-link">Вийти</a>
     <h1>Загальна інформація</h1>
     <div class="info">
         <form method="POST">
@@ -21,25 +30,38 @@
             По: <input type="date" name="end_date" value="{{ end_date }}">
             <input type="submit" value="Оновити">
         </form>
-        <h2>Залишки товару</h2>
+        <h2>Товар</h2>
         {% if products %}
             {% for product in products %}
                 <p>{{ product[0] }}: {{ product[1] }} шт. 
                     <a href="/edit_product/{{ product[2] }}" class="edit-btn">[Редагувати]</a>
+                    <a href="/delete_product/{{ product[2] }}" class="delete-btn" onclick="return confirm('Ви впевнені, що хочете видалити цей товар?');">[Видалити]</a>
                 </p>
             {% endfor %}
         {% else %}
             <p>Немає товарів у базі.</p>
+        {% endif %}
+        <h2>Товари з низьким запасом (< 5 шт.):</h2>
+        {% if low_stock_products %}
+            {% for product in low_stock_products %}
+                <p class="low-stock">{{ product[0] }}: {{ product[1] }} шт. 
+                    <a href="/edit_product/{{ product[2] }}" class="edit-btn">[Поповнити]</a>
+                    <a href="/delete_product/{{ product[2] }}" class="delete-btn" onclick="return confirm('Ви впевнені, що хочете видалити цей товар?');">[Видалити]</a>
+                </p>
+            {% endfor %}
+        {% else %}
+            <p>Немає товарів з низьким запасом.</p>
         {% endif %}
         <h2>Товар на пошті: {{ on_post }} шт. (Вартість: {{ on_post_cost | default(0) }} грн)</h2>
         <h2>На пошті: {{ (on_post_cost | default(0)) - (withdrawn | default(0)) }} грн</h2>
         <h2>Знято з пошти: {{ withdrawn | default(0) }} грн</h2>
         <h2>Загальний дохід за період: {{ total_income | default(0) }} грн</h2>
     </div>
-    <button onclick="window.location='/purchases'">Покупки</button>
-    <button onclick="window.location='/reports'">Переглянути звіти</button>
+    <button onclick="window.location='/purchases'">Замовлення</button>
+    <button onclick="window.location='/reports'">Статистика</button>
     <button onclick="window.location='/add_expense'">Додати витрати</button>
     <button onclick="window.location='/add_product'">Додати товар</button>
     <button onclick="window.location='/withdraw'">Зняття коштів з пошти</button>
+    <button onclick="window.location='/stock_history'">Історія запасів</button>
 </body>
 </html>
