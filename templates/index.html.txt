@@ -22,15 +22,19 @@
             <input type="submit" value="Оновити">
         </form>
         <h2>Залишки товару</h2>
-        {% for product in products %}
-            <p>{{ product[0] }}: {{ product[1] }} шт. 
-                <a href="/edit_product/{{ product[2] }}" class="edit-btn">[Редагувати]</a>
-            </p>
-        {% endfor %}
-        <h2>Товар на пошті: {{ on_post }} шт. (Вартість: {{ on_post_cost }} грн)</h2>
-        <h2>На пошті: {{ on_post_cost - withdrawn }} грн</h2>
-        <h2>Знято з пошти: {{ withdrawn }} грн</h2>
-        <h2>Загальний дохід за період: {{ total_income }} грн</h2>
+        {% if products %}
+            {% for product in products %}
+                <p>{{ product[0] }}: {{ product[1] }} шт. 
+                    <a href="/edit_product/{{ product[2] }}" class="edit-btn">[Редагувати]</a>
+                </p>
+            {% endfor %}
+        {% else %}
+            <p>Немає товарів у базі.</p>
+        {% endif %}
+        <h2>Товар на пошті: {{ on_post }} шт. (Вартість: {{ on_post_cost | default(0) }} грн)</h2>
+        <h2>На пошті: {{ (on_post_cost | default(0)) - (withdrawn | default(0)) }} грн</h2>
+        <h2>Знято з пошти: {{ withdrawn | default(0) }} грн</h2>
+        <h2>Загальний дохід за період: {{ total_income | default(0) }} грн</h2>
     </div>
     <button onclick="window.location='/purchases'">Покупки</button>
     <button onclick="window.location='/reports'">Переглянути звіти</button>
