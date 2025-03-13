@@ -288,7 +288,6 @@ def edit_product(product_id):
     product = c.fetchone()
     conn.close()
     return render_template('edit_product.html', product=product, product_id=product_id)
-
 if __name__ == '__main__':
     init_db()
     app.run(host='0.0.0.0', port=8080)
