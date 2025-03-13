@@ -9,7 +9,7 @@ def init_db():
     conn = sqlite3.connect('business.db')
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS products 
-                 (id INTEGER PRIMARY KEY, name TEXT, stock INTEGER)''')
+                 (id INTEGER PRIMARY KEY, name TEXT UNIQUE, stock INTEGER)''')  # Додано UNIQUE для назви
     c.execute('''CREATE TABLE IF NOT EXISTS sales 
                  (id INTEGER PRIMARY KEY, date TEXT, client_name TEXT, instagram TEXT, 
                   post_office TEXT, prepayment REAL, cod REAL, products TEXT, ttn TEXT, 
@@ -33,7 +33,6 @@ def index():
     conn = sqlite3.connect('business.db')
     c = conn.cursor()
     
-    # Встановлюємо період за замовчуванням (останній місяць)
     end_date = datetime.now().strftime('%Y-%m-%d')
     start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
     
@@ -41,23 +40,18 @@ def index():
         start_date = request.form.get('start_date', start_date)
         end_date = request.form.get('end_date', end_date)
     
-    # Залишки товару
     c.execute("SELECT name, stock, id FROM products")
     products = c.fetchall()
     
-    # Товар на пошті та його кількість
     c.execute("SELECT COUNT(*) FROM sales WHERE status = 'Очікує' AND date BETWEEN ? AND ?", (start_date, end_date))
     on_post = c.fetchone()[0] or 0
     
-    # Сума на пошті (для статусу "Очікує")
     c.execute("SELECT SUM(prepayment + cod) FROM sales WHERE status = 'Очікує' AND date BETWEEN ? AND ?", (start_date, end_date))
     on_post_cost = c.fetchone()[0] or 0
     
-    # Сума знята з пошти
     c.execute("SELECT SUM(amount) FROM withdrawals WHERE date BETWEEN ? AND ?", (start_date, end_date))
     withdrawn = c.fetchone()[0] or 0
     
-    # Загальний дохід (тільки "Забрали")
     c.execute("SELECT SUM(prepayment + cod) FROM sales WHERE status = 'Забрали' AND date BETWEEN ? AND ?", (start_date, end_date))
     total_income = c.fetchone()[0] or 0
     
@@ -71,7 +65,6 @@ def purchases():
     conn = sqlite3.connect('business.db')
     c = conn.cursor()
     
-    # Встановлюємо період
     end_date = datetime.now().strftime('%Y-%m-%d')
     start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
     
@@ -91,16 +84,20 @@ def purchases():
             status = request.form['status']
             comment = request.form['comment']
             
-            # Отримуємо товари та їх кількість
+            # Перевірка запасів товару
             product_names = request.form.getlist('product')
             quantities = request.form.getlist('quantity')
             products = []
             for name, qty in zip(product_names, quantities):
                 if name and int(qty) > 0:
+                    c.execute("SELECT stock FROM products WHERE name = ?", (name,))
+                    stock = c.fetchone()
+                    if stock is None or stock[0] < int(qty) and status != 'Повернення':
+                        conn.close()
+                        return f'<script>alert("Недостатньо товару {name} на складі! Залишок: {stock[0] if stock else 0} шт."); window.location="/purchases";</script>'
                     products.append(f"{name} ({qty} шт.)")
-                    # Зменшуємо запаси товару, якщо статус не "Повернення"
                     if status != 'Повернення':
-                        c.execute("UPDATE products SET stock = stock - ? WHERE name = ? AND stock >= ?", (int(qty), name, int(qty)))
+                        c.execute("UPDATE products SET stock = stock - ? WHERE name = ?", (int(qty), name))
             
             products_str = ", ".join(products)
             c.execute("INSERT INTO sales (date, client_name, instagram, post_office, prepayment, cod, products, ttn, status, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
@@ -109,12 +106,10 @@ def purchases():
             conn.close()
             return '<script>alert("Покупку додано!"); window.location="/purchases";</script>'
     
-    # Отримуємо покупки за період
     c.execute("SELECT id, date, client_name, instagram, post_office, products, prepayment, cod, ttn, status, comment FROM sales WHERE date BETWEEN ? AND ? ORDER BY date", 
               (start_date, end_date))
     sales = c.fetchall()
     
-    # Підсумки по товарах
     product_counts = {}
     for sale in sales:
         products = sale[5].split(", ") if sale[5] else []
@@ -124,14 +119,13 @@ def purchases():
             qty = int(name_qty[1].split(" ")[0]) if len(name_qty) > 1 else 0
             product_counts[name] = product_counts.get(name, 0) + qty
     
-    # Підсумки по сумах
     totals = {'Забрали': 0, 'Очікує': 0, 'Повернення': 0}
     for sale in sales:
         status = sale[9]
-        total = sale[6] + sale[7]  # prepayment + cod
+        total = sale[6] + sale[7]
         totals[status] = totals.get(status, 0) + total
     
-    c.execute("SELECT id, name FROM products")
+    c.execute("SELECT id, name, stock FROM products")  # Додано stock для валідації
     products = c.fetchall()
     conn.close()
     return render_template('purchases.html', sales=sales, products=products, product_counts=product_counts, 
@@ -143,38 +137,52 @@ def change_status(sale_id):
     conn = sqlite3.connect('business.db')
     c = conn.cursor()
     
-    if request.method == 'POST':
-        new_status = request.form['status']
-        # Отримуємо поточний статус і товари
-        c.execute("SELECT status, products FROM sales WHERE id = ?", (sale_id,))
-        current_status, products = c.fetchone()
+    try:
+        if request.method == 'POST':
+            new_status = request.form['status']
+            c.execute("SELECT status, products FROM sales WHERE id = ?", (sale_id,))
+            result = c.fetchone()
+            if not result:
+                conn.close()
+                return '<script>alert("Продаж не знайдено!"); window.location="/purchases";</script>'
+            
+            current_status, products = result
+            if new_status == 'Повернення' and current_status != 'Повернення':
+                product_list = products.split(", ") if products else []
+                for product in product_list:
+                    name_qty = product.split(" (")
+                    name = name_qty[0]
+                    qty = int(name_qty[1].split(" ")[0]) if len(name_qty) > 1 else 0
+                    c.execute("UPDATE products SET stock = stock + ? WHERE name = ?", (qty, name))
+            elif current_status == 'Повернення' and new_status != 'Повернення':
+                product_list = products.split(", ") if products else []
+                for product in product_list:
+                    name_qty = product.split(" (")
+                    name = name_qty[0]
+                    qty = int(name_qty[1].split(" ")[0]) if len(name_qty) > 1 else 0
+                    c.execute("SELECT stock FROM products WHERE name = ?", (name,))
+                    stock = c.fetchone()[0]
+                    if stock < qty:
+                        conn.close()
+                        return f'<script>alert("Недостатньо товару {name} на складі! Залишок: {stock} шт."); window.location="/purchases";</script>'
+                    c.execute("UPDATE products SET stock = stock - ? WHERE name = ?", (qty, name))
+            
+            c.execute("UPDATE sales SET status = ? WHERE id = ?", (new_status, sale_id))
+            conn.commit()
+            conn.close()
+            return '<script>alert("Статус змінено!"); window.location="/purchases";</script>'
         
-        # Якщо статус змінюється на "Повернення", додаємо запаси назад
-        if new_status == 'Повернення' and current_status != 'Повернення':
-            product_list = products.split(", ") if products else []
-            for product in product_list:
-                name_qty = product.split(" (")
-                name = name_qty[0]
-                qty = int(name_qty[1].split(" ")[0]) if len(name_qty) > 1 else 0
-                c.execute("UPDATE products SET stock = stock + ? WHERE name = ?", (qty, name))
-        # Якщо статус змінюється з "Повернення" на інший, зменшуємо запаси
-        elif current_status == 'Повернення' and new_status != 'Повернення':
-            product_list = products.split(", ") if products else []
-            for product in product_list:
-                name_qty = product.split(" (")
-                name = name_qty[0]
-                qty = int(name_qty[1].split(" ")[0]) if len(name_qty) > 1 else 0
-                c.execute("UPDATE products SET stock = stock - ? WHERE name = ? AND stock >= ?", (qty, name, qty))
-        
-        c.execute("UPDATE sales SET status = ? WHERE id = ?", (new_status, sale_id))
-        conn.commit()
+        c.execute("SELECT status FROM sales WHERE id = ?", (sale_id,))
+        result = c.fetchone()
+        if not result:
+            conn.close()
+            return '<script>alert("Продаж не знайдено!"); window.location="/purchases";</script>'
+        current_status = result[0]
         conn.close()
-        return '<script>alert("Статус змінено!"); window.location="/purchases";</script>'
-    
-    c.execute("SELECT status FROM sales WHERE id = ?", (sale_id,))
-    current_status = c.fetchone()[0]
-    conn.close()
-    return render_template('change_status.html', sale_id=sale_id, current_status=current_status)
+        return render_template('change_status.html', sale_id=sale_id, current_status=current_status)
+    except Exception as e:
+        conn.close()
+        return f'<script>alert("Помилка: {str(e)}"); window.location="/purchases";</script>'
 
 # Сторінка "Переглянути звіти"
 @app.route('/reports', methods=['GET', 'POST'])
@@ -182,7 +190,6 @@ def reports():
     conn = sqlite3.connect('business.db')
     c = conn.cursor()
     
-    # Встановлюємо період
     end_date = datetime.now().strftime('%Y-%m-%d')
     start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
     
@@ -190,12 +197,10 @@ def reports():
         start_date = request.form.get('start_date', start_date)
         end_date = request.form.get('end_date', end_date)
     
-    # Отримуємо покупки за період
     c.execute("SELECT client_name, instagram, ttn, products, prepayment, cod, status FROM sales WHERE date BETWEEN ? AND ? ORDER BY date", 
               (start_date, end_date))
     sales = c.fetchall()
     
-    # Підсумки по товарах
     product_counts = {}
     for sale in sales:
         products = sale[3].split(", ") if sale[3] else []
@@ -205,19 +210,16 @@ def reports():
             qty = int(name_qty[1].split(" ")[0]) if len(name_qty) > 1 else 0
             product_counts[name] = product_counts.get(name, 0) + qty
     
-    # Підсумки по сумах
     totals = {'Забрали': 0, 'Очікує': 0, 'Повернення': 0}
     for sale in sales:
         status = sale[6]
-        total = sale[4] + sale[5]  # prepayment + cod
+        total = sale[4] + sale[5]
         totals[status] = totals.get(status, 0) + total
     
-    # Витрати за період
     c.execute("SELECT description, amount FROM expenses WHERE date BETWEEN ? AND ?", (start_date, end_date))
     expenses = c.fetchall()
     total_expenses = sum(expense[1] for expense in expenses)
     
-    # Прибуток
     profit = totals['Забрали'] - total_expenses
     
     conn.close()
@@ -265,6 +267,12 @@ def add_product():
         
         conn = sqlite3.connect('business.db')
         c = conn.cursor()
+        # Перевірка унікальності назви товару
+        c.execute("SELECT COUNT(*) FROM products WHERE name = ?", (name,))
+        if c.fetchone()[0] > 0:
+            conn.close()
+            return '<script>alert("Товар із такою назвою вже існує!"); window.location="/add_product";</script>'
+        
         c.execute("INSERT INTO products (name, stock) VALUES (?, ?)", (name, stock))
         conn.commit()
         conn.close()
@@ -277,18 +285,25 @@ def edit_product(product_id):
     conn = sqlite3.connect('business.db')
     c = conn.cursor()
     
-    if request.method == 'POST':
-        new_stock = int(request.form['stock'])
-        c.execute("UPDATE products SET stock = ? WHERE id = ?", (new_stock, product_id))
-        conn.commit()
+    try:
+        if request.method == 'POST':
+            new_stock = int(request.form['stock'])
+            c.execute("UPDATE products SET stock = ? WHERE id = ?", (new_stock, product_id))
+            conn.commit()
+            conn.close()
+            return '<script>alert("Запаси оновлено!"); window.location="/";</script>'
+        
+        c.execute("SELECT name, stock FROM products WHERE id = ?", (product_id,))
+        product = c.fetchone()
+        if not product:
+            conn.close()
+            return '<script>alert("Товар не знайдено!"); window.location="/";</script>'
         conn.close()
-        return '<script>alert("Запаси оновлено!"); window.location="/";</script>'
-    
-    c.execute("SELECT name, stock FROM products WHERE id = ?", (product_id,))
-    product = c.fetchone()
-    conn.close()
-    return render_template('edit_product.html', product=product, product_id=product_id)
+        return render_template('edit_product.html', product=product, product_id=product_id)
+    except Exception as e:
+        conn.close()
+        return f'<script>alert("Помилка: {str(e)}"); window.location="/";</script>'
 
 if __name__ == '__main__':
-    init_db()  # Ініціалізація бази даних
-    app.run(host='0.0.0.0', port=8080)  # Запуск додатка для Render
+    init_db()
+    app.run(host='0.0.0.0', port=8080)
